@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 )
@@ -11,6 +12,18 @@ type User struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type CustomValidator struct {
+	validator *validator.Validate
+}
+
+func (cv *CustomValidator) Validate(i any) error {
+	if err := cv.validator.Struct(i); err != nil {
+		// Optionally, you could return the error to give each route more control over the status code
+		return echo.ErrBadRequest.Wrap(err)
+	}
+	return nil
 }
 
 func main() {
@@ -23,7 +36,14 @@ func main() {
 
 	e.POST("/users", func(c *echo.Context) error {
 		u := new(User)
+
+		// binding the user data
 		if err := c.Bind(u); err != nil {
+			return err
+		}
+
+		// validating the user data
+		if err := c.Validate(u); err != nil {
 			return err
 		}
 
