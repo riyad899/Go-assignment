@@ -11,9 +11,10 @@ import (
 )
 
 type User struct {
-	Name     string `json:"name" validate:"required"`
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=6"`
+	gorm.Model
+	Name     string `json:"name" validate:"required" gorm:"type:varchar(100); not null"`
+	Email    string `json:"email" validate:"required,email" gorm:"type:varchar(255); uniqueIndex;not nll"`
+	Password string `json:"password" validate:"required,min=6" gorm:"type:varchar(100); not null"`
 }
 
 type CustomValidator struct {
@@ -34,6 +35,7 @@ func main() {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		TranslateError: true,
 	})
+	db.AutoMigrate(&User{})
 
 	if err != nil {
 		panic("failed to connect database")
@@ -51,21 +53,25 @@ func main() {
 	e.Validator = &CustomValidator{validator: validator.New()}
 
 	e.POST("/users", func(c *echo.Context) error {
-		u := new(User)
+		newUser := new(User)
 
 		// binding the user data
-		if err := c.Bind(u); err != nil {
+		if err := c.Bind(newUser); err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]any{"error": err.Error()})
 		}
 
 		// validating the user data
-		if err := c.Validate(u); err != nil {
+		if err := c.Validate(newUser); err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]any{"error": err.Error()})
 		}
 
 		// save to database
+		result := db.Create(newUser)
+		if result.Error != nil {
+			c.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error()})
+		}
 
-		return c.JSON(http.StatusCreated, u)
+		return c.JSON(http.StatusCreated, newUser)
 		// or
 		// return c.XML(http.StatusCreated, u)
 	})
