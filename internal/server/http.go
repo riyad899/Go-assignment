@@ -31,10 +31,11 @@ func Start(db *gorm.DB, cfg *config.Config) {
 	e.Validator = &CustomValidator{validator: validator.New()}
 	e.Use(middleware.RequestLogger())
 
-	e.GET("/", func(c *echo.Context) error {
-		return c.String(http.StatusOK, "Hello, World!")
+	e.GET("/health", func(c *echo.Context) error {
+		return c.String(http.StatusOK, "ok")
 	})
 
+	// user routes
 	user.RegisterRoutes(e, db)
 
 	port := fmt.Sprintf(":%s", cfg.Port)
