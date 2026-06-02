@@ -13,5 +13,7 @@ func RegisterRoutes(e *echo.Echo, db *gorm.DB) {
 	api := e.Group("/api/v1/events")
 
 	api.POST("", handler.CreateEvent)
+	api.GET("", handler.GetEvents)
+	api.GET("/:id", handler.GetEventsByID)
 
 }
