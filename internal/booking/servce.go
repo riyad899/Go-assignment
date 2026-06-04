@@ -1,11 +1,55 @@
 package booking
 
+import (
+	"gotickets/internal/booking/dto"
+	"gotickets/internal/event"
+
+	"github.com/google/uuid"
+)
+
 type service struct {
 	bookingRepo Repository
+	eventRepo   event.Repository
 }
 
-func NewService(bookingRepo Repository) *service {
+func NewService(bookingRepo Repository, eventRepo event.Repository) *service {
 	return &service{
 		bookingRepo: bookingRepo,
+		eventRepo:   eventRepo,
 	}
+}
+
+func generateBookingCode() string {
+	return "GT-" + uuid.New().String()
+}
+
+func (s *service) CreateBooking(userId uint, req dto.CreateRequest) (*dto.Response, error) {
+	event, err := s.eventRepo.GetByID(req.EventID)
+	if err != nil {
+		return nil, err
+	}
+
+	if event.AvailableTickets < req.Quantity {
+		return nil, ErrNotEnoughTickets
+	}
+
+	booking := &Booking{
+		UserID:      userId,
+		EventID:     req.EventID,
+		Quantity:    req.Quantity,
+		Status:      BookingConfirmed,
+		TotalPrice:  req.Quantity * event.Price,
+		BookingCode: generateBookingCode(),
+	}
+
+	if err := s.bookingRepo.Create(booking); err != nil {
+		return nil, err
+	}
+
+	event.AvailableTickets = event.AvailableTickets - req.Quantity
+	if err := s.eventRepo.Update(event); err != nil {
+		return nil, err
+	}
+
+	return booking.ToResponse(), nil
 }
