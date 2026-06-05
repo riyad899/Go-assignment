@@ -3,7 +3,7 @@ package booking
 import (
 	"gotickets/internal/auth"
 	"gotickets/internal/config"
-	"gotickets/internal/event"
+	"gotickets/internal/domain/event"
 	"gotickets/internal/middlewares"
 
 	"github.com/labstack/echo/v5"

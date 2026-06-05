@@ -2,8 +2,8 @@ package booking
 
 import (
 	"errors"
-	"gotickets/internal/booking/dto"
-	"gotickets/internal/event"
+	"gotickets/internal/domain/booking/dto"
+	"gotickets/internal/domain/event"
 	"gotickets/internal/httpresponse"
 	"net/http"
 
