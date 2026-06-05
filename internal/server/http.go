@@ -34,7 +34,7 @@ func Start(db *gorm.DB, cfg *config.Config) {
 	e.Use(middleware.RequestLogger())
 
 	e.GET("/health", func(c *echo.Context) error {
-		return c.String(http.StatusOK, "ok")
+		return c.String(http.StatusOK, "running")
 	})
 
 	//routes
