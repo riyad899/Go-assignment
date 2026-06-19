@@ -1,6 +1,6 @@
 # GoTickets
 
-GoTickets is a beginner-friendly REST API project written in Go. It shows how to build a small ticket booking backend with user authentication, events, bookings, PostgreSQL, GORM, Echo, validation, and JWT.
+GoTickets is a beginner-friendly REST API project written in Go. It shows how to build a minimal authentication and authorization backend with PostgreSQL, GORM, Echo, validation, and JWT.
 
 This project is useful for students who are learning how a Go web application is usually organized.
 
@@ -34,10 +34,6 @@ gotickets/
 │   ├── auth/                   # JWT token create/validate logic
 │   ├── config/                 # Environment and database config
 │   ├── domain/
-│   │   ├── booking/            # Booking feature
-│   │   │   └── dto/            # Booking request/response DTOs
-│   │   ├── event/              # Event feature
-│   │   │   └── dto/            # Event request/response DTOs
 │   │   └── user/               # User auth/profile feature
 │   │       └── dto/            # User request/response DTOs
 │   ├── httpresponse/           # Common error response shape
@@ -66,10 +62,10 @@ Route -> Handler -> Service -> Repository -> Database
 Example:
 
 ```text
-POST /api/v1/bookings
-    -> booking handler
-    -> booking service
-    -> booking repository
+POST /api/v1/auth/register
+    -> user handler
+    -> user service
+    -> user repository
     -> PostgreSQL
 ```
 
@@ -238,104 +234,6 @@ curl http://localhost:8080/api/v1/auth/me \
   -H "Authorization: Bearer YOUR_TOKEN_HERE"
 ```
 
-### Event Routes
-
-Create an event:
-
-```http
-POST /api/v1/events
-```
-
-Example:
-
-```bash
-curl -X POST http://localhost:8080/api/v1/events \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Go Workshop",
-    "description": "A beginner friendly Go learning event",
-    "location": "Dhaka",
-    "starts_at": "2026-07-01T10:00:00Z",
-    "total_tickets": 100,
-    "price": 500
-  }'
-```
-
-Get all events:
-
-```http
-GET /api/v1/events
-```
-
-Example:
-
-```bash
-curl http://localhost:8080/api/v1/events
-```
-
-Get one event:
-
-```http
-GET /api/v1/events/:id
-```
-
-Example:
-
-```bash
-curl http://localhost:8080/api/v1/events/1
-```
-
-Update an event:
-
-```http
-PATCH /api/v1/events/:id
-```
-
-Example:
-
-```bash
-curl -X PATCH http://localhost:8080/api/v1/events/1 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Updated Go Workshop",
-    "price": 700
-  }'
-```
-
-### Booking Routes
-
-Booking routes are protected. You must login first and send the JWT token in the `Authorization` header.
-
-Create a booking:
-
-```http
-POST /api/v1/bookings
-```
-
-Example:
-
-```bash
-curl -X POST http://localhost:8080/api/v1/bookings \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
-  -d '{
-    "event_id": 1,
-    "quantity": 2
-  }'
-```
-
-Get my bookings:
-
-```http
-GET /api/v1/bookings/me
-```
-
-Example:
-
-```bash
-curl http://localhost:8080/api/v1/bookings/me \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
-```
 
 ## Important Concepts For Beginners
 
@@ -353,7 +251,7 @@ This package creates the Echo app, adds middleware, registers routes, and starts
 
 ### `internal/domain`
 
-This folder contains the main business domains: user, event, and booking. Each domain has its own handler, service, repository, entity, route registration, and DTOs.
+This folder contains the main business domains: user. The user domain has its own handler, service, repository, entity, route registration, and DTOs.
 
 ### Handler
 
@@ -383,8 +281,6 @@ The project uses GORM `AutoMigrate`, so tables are created automatically when th
 Current main tables:
 
 - users
-- events
-- bookings
 
 ## Common Problems
 
@@ -427,8 +323,6 @@ If you are new to Go, read the project in this order:
 6. `internal/domain/user/handler.go`
 7. `internal/domain/user/service.go`
 8. `internal/domain/user/repository.go`
-9. `internal/domain/event`
-10. `internal/domain/booking`
 
-This order helps you understand how the app starts, then how one feature works from route to database.
+This order helps you understand how the app starts, then how the authentication feature works from route to database.
 

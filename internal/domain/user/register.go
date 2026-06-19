@@ -24,4 +24,3 @@ func RegisterRoutes(e *echo.Echo, db *gorm.DB, cfg *config.Config) {
 
 }
 
-//
