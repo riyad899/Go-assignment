@@ -20,9 +20,14 @@ func LoadEnv() *Config {
 		log.Fatal("Error loading .env file")
 	}
 
+	dsn := os.Getenv("DSN")
+	if dsn == "" {
+		dsn = "host=localhost user=postgres password=postgres dbname=gotickets port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+	}
+
 	return &Config{
 		Port:      os.Getenv("PORT"),
-		Dsn:       os.Getenv("DSN"),
+		Dsn:       dsn,
 		JwtSecret: os.Getenv("JWT_SECRET"),
 	}
 }

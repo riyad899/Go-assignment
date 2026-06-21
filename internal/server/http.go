@@ -31,7 +31,7 @@ func Start(db *gorm.DB, cfg *config.Config) {
 	e.Validator = &CustomValidator{validator: validator.New()}
 	e.Use(middleware.RequestLogger())
 
-	e.GET("/health", func(c *echo.Context) error {
+	e.GET("/", func(c *echo.Context) error {
 		return c.String(http.StatusOK, "running")
 	})
 
