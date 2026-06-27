@@ -1,328 +1,111 @@
-# GoTickets
+# Smart Parking & EV Charging Reservation System
 
-GoTickets is a beginner-friendly REST API project written in Go. It shows how to build a minimal authentication and authorization backend with PostgreSQL, GORM, Echo, validation, and JWT.
+A centralized platform for busy airports and malls to manage parking zones, specifically handling the high-demand reservation of limited EV charging spots. Built using **Go**, **Echo (v5)**, **GORM**, and **PostgreSQL**.
 
-This project is useful for students who are learning how a Go web application is usually organized.
+## 🛠️ Technology Stack
 
-## What You Will Learn
+| Technology | Description |
+| --- | --- |
+| **Go (Golang)** | Version 1.22+ |
+| **Echo** | `github.com/labstack/echo/v5` (High performance, minimalist web framework) |
+| **GORM** | `gorm.io/gorm` (ORM for Go, using PostgreSQL driver) |
+| **PostgreSQL** | Relational database (NeonDB or Supabase) |
+| **Validator** | `github.com/go-playground/validator/v10` (Struct validation) |
+| **JWT** | `github.com/golang-jwt/jwt/v5` (Standard token generation & verification) |
+| **bcrypt** | `golang.org/x/crypto/bcrypt` (Password hashing, cost 10) |
 
-- How to create a web server with Echo
-- How to organize code into packages
-- How to connect Go with PostgreSQL using GORM
-- How to create users and login with JWT authentication
-- How to protect routes with middleware
-- How to use DTOs for request and response data
-- How service, repository, and handler layers work together
+---
 
-## Tech Stack
+## 🏛️ Project Structure (Clean Architecture)
 
-- Go
-- Echo for HTTP routing
-- GORM for database access
-- PostgreSQL as the database
-- JWT for authentication
-- Validator for request validation
-- godotenv for loading `.env` files
-
-## Project Structure
+This project strictly adheres to a clean architecture pattern separating concerns into distinct layers:
 
 ```text
 gotickets/
 ├── cmd/
-│   └── main.go                 # Application entry point
+│   └── main.go                 # Application entry point & Dependency Injection
 ├── internal/
-│   ├── auth/                   # JWT token create/validate logic
-│   ├── config/                 # Environment and database config
-│   ├── domain/
-│   │   └── user/               # User auth/profile feature
-│   │       └── dto/            # User request/response DTOs
-│   ├── httpresponse/           # Common error response shape
-│   ├── middlewares/            # Auth middleware
-│   └── server/                 # Echo server setup
-├── .air.toml                   # Air config for live reload
-├── .env.example                # Example environment variables
-├── go.mod                      # Go module and dependencies
-└── go.sum
+│   ├── config/                 # Environment variables and DB connection logic
+│   ├── dto/                    # Data Transfer Objects (Request/Response structures)
+│   ├── handler/                # HTTP layer (Echo endpoints, data binding, returns JSON)
+│   ├── middlewares/            # JWT authentication and Role-based access control
+│   ├── models/                 # Database schema models (GORM)
+│   ├── repository/             # Database access operations (CRUD, Transactions)
+│   ├── service/                # Core business logic (Validation, Calculations)
+│   └── utils/                  # Shared utilities (Standardized JSON responses)
+├── .env                        # Environment configuration
+├── go.mod                      # Go module dependencies
+└── README.md                   # Project documentation
 ```
 
-## How The Code Flows
+### Layer Responsibilities
 
-For most features, the code follows this pattern:
+- **DTO**: Defines request payloads and response structures. Prevents exposing GORM models directly.
+- **Handler**: Binds/validates incoming HTTP requests, extracts JWT claims, calls Services, and formats HTTP responses. Handlers **never** talk to the database directly.
+- **Service**: Executes core business logic (e.g., hashing passwords, capacity checks, generating JWTs) and coordinates with Repositories.
+- **Repository**: Handles all data access and GORM database operations (CRUD, row locks, transactions).
 
-```text
-Route -> Handler -> Service -> Repository -> Database
-```
+---
 
-- **Route** decides the URL and HTTP method.
-- **Handler** reads the request and returns the response.
-- **Service** contains the main business logic.
-- **Repository** talks to the database.
-- **DTO** defines request and response data shapes.
+## 👥 User Roles & Permissions
 
-Example:
+| Role | Allowed Actions |
+| --- | --- |
+| **driver** | • Register and log in<br>• View all parking zones and availability<br>• Reserve a parking/EV spot<br>• View and cancel their own reservations |
+| **admin** | • All driver permissions<br>• Create parking zones<br>• View all reservations in the system |
 
-```text
-POST /api/v1/auth/register
-    -> user handler
-    -> user service
-    -> user repository
-    -> PostgreSQL
-```
+---
 
-## Requirements
+## 🔐 Concurrency & The "EV Spot Bottleneck"
 
-Before running the project, install:
+A primary technical challenge in this platform is preventing overbooking for highly demanded EV spots. 
+If `total_capacity` is 20, and two drivers attempt to book the very last spot at the exact same millisecond, standard SQL queries might read "19 active" for both requests, resulting in 21 cars booked.
 
-- Go
-- PostgreSQL
-- Git
+**The Solution:**
+This project utilizes a **GORM Database Transaction** combined with **Row-Level Locking (`FOR UPDATE`)** on the `parking_zones` record. The repository locks the specific zone row, safely counts active reservations, verifies capacity limits, creates the reservation, and then releases the lock atomically. 
 
-You can check your Go version with:
+---
 
-```bash
-go version
-```
+## 🚀 Running the Project
 
-## Setup
-
-1. Clone the project:
-
-```bash
-git clone https://github.com/Apollo-Level2-Web-Dev/gotickets.git
-cd gotickets
-```
-
-2. Create a PostgreSQL database:
-
-```sql
-CREATE DATABASE gotickets;
-```
-
-3. Create your `.env` file:
-
-```bash
-cp .env.example .env
-```
-
-4. Update `.env` with your own database values:
-
+### 1. Configure Environment
+Create a `.env` file in the root directory and define the following variables:
 ```env
 DSN="host=localhost user=postgres password=postgres dbname=gotickets port=5432 sslmode=disable TimeZone=Asia/Dhaka"
 PORT=8080
-JWT_SECRET=change-this-secret
+JWT_SECRET="super_secret_jwt_key"
 ```
 
-The `DSN` value tells GORM how to connect to PostgreSQL.
-
-## Run The Project
-
-Install dependencies:
-
+### 2. Install Dependencies
 ```bash
 go mod tidy
 ```
 
-Start the server:
-
+### 3. Run the Server
 ```bash
 go run cmd/main.go
 ```
-
-Or, if you are using Air for live reload:
-
-```bash
-air
-```
-
-If everything is okay, the server will start on:
-
-```text
-http://localhost:8080
-```
-
-Check the health route:
-
-```bash
-curl http://localhost:8080/health
-```
-
-Expected response:
-
-```text
-running
-```
-
-## Build The Project
-
-Create a local binary:
-
+*Alternatively, you can build and execute the binary:*
 ```bash
 go build -o bin/gotickets ./cmd/main.go
-```
-
-Run the binary:
-
-```bash
 ./bin/gotickets
 ```
 
-For a smaller production-style binary:
+---
 
-```bash
-CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/gotickets ./cmd/main.go
-```
+## 🌐 API Endpoints
 
-Before building for production, it is a good habit to run:
+### 🔹 Authentication
+- `POST /api/v1/auth/register` (Public) - Register a new user (`driver` or `admin`).
+- `POST /api/v1/auth/login` (Public) - Authenticate and receive a JWT.
 
-```bash
-go mod tidy
-go test ./...
-go vet ./...
-```
+### 🔹 Parking Zones
+- `POST /api/v1/zones` (Admin Only) - Create a new parking zone.
+- `GET /api/v1/zones` (Public) - View all zones and dynamically calculated `available_spots`.
+- `GET /api/v1/zones/:id` (Public) - View details for a single zone.
 
-## API Routes
-
-### Auth Routes
-
-Register a new user:
-
-```http
-POST /api/v1/auth/register
-```
-
-Example:
-
-```bash
-curl -X POST http://localhost:8080/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Mahi",
-    "email": "mahi@example.com",
-    "password": "secret123"
-  }'
-```
-
-Login:
-
-```http
-POST /api/v1/auth/login
-```
-
-Example:
-
-```bash
-curl -X POST http://localhost:8080/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "mahi@example.com",
-    "password": "secret123"
-  }'
-```
-
-The login response returns a JWT token. Keep that token for protected routes.
-
-Get current user:
-
-```http
-GET /api/v1/auth/me
-```
-
-Example:
-
-```bash
-curl http://localhost:8080/api/v1/auth/me \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
-```
-
-
-## Important Concepts For Beginners
-
-### `cmd/main.go`
-
-This is where the application starts. It loads environment variables, connects to the database, and starts the server.
-
-### `internal/config`
-
-This package reads values from `.env` and creates the database connection.
-
-### `internal/server`
-
-This package creates the Echo app, adds middleware, registers routes, and starts listening on the selected port.
-
-### `internal/domain`
-
-This folder contains the main business domains: user. The user domain has its own handler, service, repository, entity, route registration, and DTOs.
-
-### Handler
-
-A handler receives an HTTP request. It usually does these things:
-
-1. Reads JSON input
-2. Validates the input
-3. Calls the service
-4. Sends JSON response
-
-### Service
-
-A service contains business logic. For example, the booking service checks if enough tickets are available before creating a booking.
-
-### Repository
-
-A repository is responsible for database queries. This keeps database code separate from business logic.
-
-### Middleware
-
-Middleware runs before the handler. In this project, auth middleware checks the JWT token and adds user information to the request context.
-
-## Database Tables
-
-The project uses GORM `AutoMigrate`, so tables are created automatically when the server starts.
-
-Current main tables:
-
-- users
-
-## Common Problems
-
-### `.env` file not found
-
-Make sure you created a `.env` file:
-
-```bash
-cp .env.example .env
-```
-
-### Database connection failed
-
-Check these things:
-
-- PostgreSQL is running
-- Database name is correct
-- Username and password are correct
-- Port is correct, usually `5432`
-
-### Protected route says unauthorized
-
-Make sure the request has this header:
-
-```text
-Authorization: Bearer YOUR_TOKEN_HERE
-```
-
-Also make sure the token comes from the login route.
-
-## Suggested Learning Path
-
-If you are new to Go, read the project in this order:
-
-1. `cmd/main.go`
-2. `internal/config/config.go`
-3. `internal/config/db.go`
-4. `internal/server/http.go`
-5. `internal/domain/user/register.go`
-6. `internal/domain/user/handler.go`
-7. `internal/domain/user/service.go`
-8. `internal/domain/user/repository.go`
-
-This order helps you understand how the app starts, then how the authentication feature works from route to database.
-
+### 🔹 Reservations
+- `POST /api/v1/reservations` (Driver/Admin) - Book a spot (Executes row-level locked transaction).
+- `GET /api/v1/reservations/my-reservations` (Driver/Admin) - View your own active bookings.
+- `DELETE /api/v1/reservations/:id` (Driver/Admin) - Cancel your own booking.
+- `GET /api/v1/reservations` (Admin Only) - View all reservations system-wide.
