@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 
 	"gotickets/internal/config"
 	"gotickets/internal/handler"
@@ -55,6 +56,12 @@ func main() {
 	e.Validator = &CustomValidator{validator: validator.New()}
 
 	// 7. Routes
+	e.GET("/", func(c *echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{
+			"message": "Running Server",
+		})
+	})
+
 	api := e.Group("/api/v1")
 
 	// Auth routes
